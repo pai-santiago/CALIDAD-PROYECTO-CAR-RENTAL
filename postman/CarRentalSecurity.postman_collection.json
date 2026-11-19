@@ -1,0 +1,52 @@
+{
+  "info": {
+    "_postman_id": "b4661cf4-23c7-4b52-8f7a-ef8a102e5da4",
+    "name": "Car Rental Security API",
+    "description": "Registro y login JWT con respuestas HTTP 200.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Registro - usuario 1",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"evidencia.jwt1\",\n  \"email\": \"evidencia.jwt1@example.test\",\n  \"password\": \"JwtDemo2026!\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+      }
+    },
+    {
+      "name": "Registro - usuario 2",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"evidencia.jwt2\",\n  \"email\": \"evidencia.jwt2@example.test\",\n  \"password\": \"JwtDemo2026!\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+      }
+    },
+    {
+      "name": "Login - usuario 1",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "if (body.accessToken) pm.collectionVariables.set('accessToken', body.accessToken);"] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"evidencia.jwt1\",\n  \"password\": \"JwtDemo2026!\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "Perfil protegido - validar JWT",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5231" },
+    { "key": "accessToken", "value": "" }
+  ]
+}
