@@ -1,62 +1,44 @@
-﻿using Azure.Core.GeoJson;
 using CarRentalServices.Contracts;
 using CarRentalServices.Entities;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CarRental.Controllers
+namespace CarRental.Controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class CustomersController([FromKeyedServices("MySql")] ICustomerRepository customerRepository) : ControllerBase
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class CustomersController : Controller
+    [HttpGet]
+    public IActionResult Index() => Ok(customerRepository.GetCustomers());
+
+    [HttpGet("{id:int}")]
+    public IActionResult GetCustomerById(int id)
     {
-        private ICustomerRepository _customerRepository;
+        if (id <= 0)
+            return BadRequest("Invalid Customer Id.");
 
-        public CustomersController([FromKeyedServices("MySql")] ICustomerRepository customerRepository)
-        {
-            _customerRepository = customerRepository;
-        }
+        var customer = customerRepository.GetCustomerById(id);
+        return customer is null ? NotFound() : Ok(customer);
+    }
 
-        [HttpGet]
-        public IActionResult Index()
-        {
-            var lstCustomers = _customerRepository.GetCustomers();
-            return Json(lstCustomers);
-        }
+    [HttpPost]
+    public IActionResult Create([FromBody] Customer customer)
+    {
+        if (customer is null)
+            return BadRequest("Invalid Customer.");
 
-        [HttpGet("{id}")]
-        public IActionResult GetCustomerById(int id)
-        {
-            if (id <= 0) return BadRequest("Invalid Customer Id!");
-            var customer = _customerRepository.GetCustomerById(id);
-            return customer is null ? NotFound() : Ok(customer);
-        }
+        if (!customerRepository.InsertCustomer(customer))
+            return Problem("The customer could not be created.");
 
-        [HttpPost]
-        public IActionResult Create([FromBody] Customer customer)
-        {
-            if (customer is null) return BadRequest("Invalid Customer!");
-            var result = _customerRepository.InsertCustomer(customer);
-            if (!result) return Problem("Failed to create customer.");
-            return CreatedAtAction(
-                nameof(GetCustomerById),
-                new { id = customer.IdCustomer },
-                customer
-            );
-        }
+        return CreatedAtAction(nameof(GetCustomerById), new { id = customer.IdCustomer }, customer);
+    }
 
-        [HttpPut]
-        public IActionResult Update([FromBody] Customer customer)
-        {
-            if (customer is null || customer.IdCustomer <= 0) return BadRequest("Invalid Customer!");
-            var result = _customerRepository.UpdateCustomer(customer);
-            return result ? Ok() : NotFound();
-        }
+    [HttpPut]
+    public IActionResult Update([FromBody] Customer customer)
+    {
+        if (customer is null || customer.IdCustomer <= 0)
+            return BadRequest("Invalid Customer.");
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
-            if (id <= 0) return BadRequest("Invalid Customer Id!");
-            return _customerRepository.DeleteCustomer(id) ? NoContent() : NotFound();
-        }
+        return customerRepository.UpdateCustomer(customer) ? NoContent() : NotFound();
     }
 }

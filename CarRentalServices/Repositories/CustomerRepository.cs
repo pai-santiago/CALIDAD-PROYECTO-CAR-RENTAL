@@ -1,103 +1,80 @@
 using CarRentalServices.Contracts;
 using CarRentalServices.Entities;
+using CarRentalServices.Utilities;
 using MySqlConnector;
 using System.Data;
 
-namespace CarRentalServices.Repositories
+namespace CarRentalServices.Repositories;
+
+public class CustomerRepository(IMySqlDataService dataService) : ICustomerRepository
 {
-    public class CustomerRepository : ICustomerRepository
+    public IEnumerable<Customer> GetCustomers()
     {
-        private readonly IMySqlDataService _mySqlDataService;
+        var data = dataService.ExecSP("GetCustomers");
+        return data.Tables.Count > 0 ? MapCustomers(data.Tables[0]) : [];
+    }
 
-        public CustomerRepository(IMySqlDataService mySqlDataService)
+    public Customer? GetCustomerById(int id)
+    {
+        var parameters = new[]
         {
-            _mySqlDataService = mySqlDataService;
-        }
+            MySqlParameterBuilder.CreateParameter("@p_CustomerId", MySqlDbType.Int32, id)
+        };
+        var data = dataService.ExecSP("GetCustomerById", parameters);
+        return data.Tables.Count > 0 ? MapCustomers(data.Tables[0]).FirstOrDefault() : null;
+    }
 
-        public IEnumerable<Customer> GetCustomers()
-        {
-            var data = _mySqlDataService.ExecuteSql("SELECT * FROM CarRental.Customer ORDER BY IdCustomer;");
-            return data.Tables.Count > 0 && data.Tables[0].Rows.Count > 0
-                ? MapCustomers(data.Tables[0])
-                : [];
-        }
+    public bool InsertCustomer(Customer customer)
+    {
+        var data = dataService.ExecSP("InsertCustomer", CreateParameters(customer));
+        if (data.Tables.Count > 0 && data.Tables[0].Rows.Count > 0)
+            customer.IdCustomer = Convert.ToInt32(data.Tables[0].Rows[0]["newCustomerId"]);
 
-        public Customer? GetCustomerById(int id)
-        {
-            var data = _mySqlDataService.ExecuteSql(
-                "SELECT * FROM CarRental.Customer WHERE IdCustomer = @IdCustomer;",
-                [new MySqlParameter("@IdCustomer", MySqlDbType.Int32) { Value = id }]);
-            return data.Tables.Count > 0 && data.Tables[0].Rows.Count > 0
-                ? MapCustomers(data.Tables[0]).FirstOrDefault()
-                : null;
-        }
+        return customer.IdCustomer > 0;
+    }
 
-        public bool InsertCustomer(Customer customer)
-        {
-            const string sql = """
-                INSERT INTO CarRental.Customer
-                    (FirstName, LastName, SocialSecurityNumber, Email, CountryName, CountryId, MobilePhone, StateName)
-                VALUES
-                    (@FirstName, @LastName, @SocialSecurityNumber, @Email, @CountryName, @CountryId, @MobilePhone, @StateName);
-                """;
-            customer.IdCustomer = checked((int)_mySqlDataService.ExecuteInsert(sql, CreateParameters(customer)));
-            return customer.IdCustomer > 0;
-        }
+    public bool UpdateCustomer(Customer customer)
+    {
+        var data = dataService.ExecSP("UpdateCustomer", CreateParameters(customer, includeId: true));
+        return data.Tables.Count > 0
+            && data.Tables[0].Rows.Count > 0
+            && Convert.ToInt32(data.Tables[0].Rows[0]["RowsAffected"]) > 0;
+    }
 
-        public bool UpdateCustomer(Customer customer)
-        {
-            const string sql = """
-                UPDATE CarRental.Customer
-                SET FirstName = @FirstName, LastName = @LastName,
-                    SocialSecurityNumber = @SocialSecurityNumber, Email = @Email,
-                    CountryName = @CountryName, CountryId = @CountryId,
-                    MobilePhone = @MobilePhone, StateName = @StateName
-                WHERE IdCustomer = @IdCustomer;
-                """;
-            return _mySqlDataService.ExecuteNonQuery(sql, CreateParameters(customer, includeId: true)) > 0;
-        }
-
-        public bool DeleteCustomer(int id)
-        {
-            return _mySqlDataService.ExecuteNonQuery(
-                "DELETE FROM CarRental.Customer WHERE IdCustomer = @IdCustomer;",
-                [new MySqlParameter("@IdCustomer", MySqlDbType.Int32) { Value = id }]) > 0;
-        }
-
-        private static List<Customer> MapCustomers(DataTable dataTable)
-        {
-            return dataTable.Rows.Cast<DataRow>().Select(row => new Customer
+    private static List<Customer> MapCustomers(DataTable table)
+    {
+        return table.Rows.Cast<DataRow>()
+            .Select(row => new Customer
             {
                 IdCustomer = Convert.ToInt32(row["IdCustomer"]),
                 FirstName = Convert.ToString(row["FirstName"]) ?? string.Empty,
                 LastName = Convert.ToString(row["LastName"]) ?? string.Empty,
-                SocialSecurityNumber = Convert.ToString(row["SocialSecurityNumber"]) ?? string.Empty,
+                SocialSecurityNumber = Convert.ToString(row["SSN"]) ?? string.Empty,
                 Email = Convert.ToString(row["Email"]) ?? string.Empty,
-                CountryName = Convert.ToString(row["CountryName"]) ?? string.Empty,
+                CountryName = Convert.ToString(row["Country"]) ?? string.Empty,
                 CountryId = Convert.ToInt32(row["CountryId"]),
-                MobilePhone = Convert.ToString(row["MobilePhone"]) ?? string.Empty,
+                MobilePhone = Convert.ToString(row["Mobile"]) ?? string.Empty,
                 StateName = Convert.ToString(row["StateName"]) ?? string.Empty
-            }).ToList();
-        }
+            })
+            .ToList();
+    }
 
-        private static IEnumerable<MySqlParameter> CreateParameters(Customer customer, bool includeId = false)
+    private static IEnumerable<MySqlParameter> CreateParameters(Customer customer, bool includeId = false)
+    {
+        var parameters = new List<MySqlParameter>
         {
-            var parameters = new List<MySqlParameter>
-            {
-                new("@FirstName", MySqlDbType.VarChar) { Value = customer.FirstName ?? string.Empty },
-                new("@LastName", MySqlDbType.VarChar) { Value = customer.LastName ?? string.Empty },
-                new("@SocialSecurityNumber", MySqlDbType.VarChar) { Value = customer.SocialSecurityNumber ?? string.Empty },
-                new("@Email", MySqlDbType.VarChar) { Value = customer.Email ?? string.Empty },
-                new("@CountryName", MySqlDbType.VarChar) { Value = customer.CountryName ?? string.Empty },
-                new("@CountryId", MySqlDbType.Int32) { Value = customer.CountryId },
-                new("@MobilePhone", MySqlDbType.VarChar) { Value = customer.MobilePhone ?? string.Empty },
-                new("@StateName", MySqlDbType.VarChar) { Value = customer.StateName ?? string.Empty }
-            };
-            if (includeId)
-            {
-                parameters.Add(new MySqlParameter("@IdCustomer", MySqlDbType.Int32) { Value = customer.IdCustomer });
-            }
-            return parameters;
-        }
+            MySqlParameterBuilder.CreateParameter("@p_FirstName", MySqlDbType.VarChar, 50, customer.FirstName),
+            MySqlParameterBuilder.CreateParameter("@p_LastName", MySqlDbType.VarChar, 50, customer.LastName),
+            MySqlParameterBuilder.CreateParameter("@p_SSN", MySqlDbType.VarChar, 50, customer.SocialSecurityNumber),
+            MySqlParameterBuilder.CreateParameter("@p_Email", MySqlDbType.VarChar, 255, customer.Email),
+            MySqlParameterBuilder.CreateParameter("@p_CountryId", MySqlDbType.Int32, customer.CountryId),
+            MySqlParameterBuilder.CreateParameter("@p_Mobile", MySqlDbType.VarChar, 50, customer.MobilePhone),
+            MySqlParameterBuilder.CreateParameter("@p_StateName", MySqlDbType.VarChar, 100, customer.StateName)
+        };
+
+        if (includeId)
+            parameters.Add(MySqlParameterBuilder.CreateParameter("@p_CustomerId", MySqlDbType.Int32, customer.IdCustomer));
+
+        return parameters;
     }
 }
