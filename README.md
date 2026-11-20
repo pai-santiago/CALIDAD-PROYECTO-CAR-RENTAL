@@ -23,3 +23,22 @@ Swagger: `http://localhost:5231/swagger`.
 Importa `postman/CarRentalSecurity.postman_collection.json` y envía, en orden, **Registro - usuario 1**, **Registro - usuario 2**, **Login - usuario 1** y **Perfil protegido - validar JWT**. Las dos altas y el login esperan `200 OK`; el JWT del login se guarda en la variable de colección `accessToken`.
 
 La colección usa cuentas de demostración. No reutilices su contraseña fuera de esta práctica.
+
+## Countries y Customers
+
+Ejecuta `database/02_countries_customers.sql` en MySQL Workbench para crear `isoCountries` y `Customers`, agregar tres registros de ejemplo por tabla y crear los procedimientos almacenados usados por la API.
+
+| Método | Ruta | Resultado correcto |
+| --- | --- | --- |
+| `GET` | `/IsoCountries` | `200 OK`, lista de países |
+| `GET` | `/IsoCountries/{id}` | `200 OK`, país encontrado |
+| `POST` | `/IsoCountries` | `201 Created`, país creado |
+| `PUT` | `/IsoCountries` | `204 No Content`, país actualizado |
+| `GET` | `/Customers` | `200 OK`, lista de clientes |
+| `GET` | `/Customers/{id}` | `200 OK`, cliente encontrado |
+| `POST` | `/Customers` | `201 Created`, cliente creado |
+| `PUT` | `/Customers` | `204 No Content`, cliente actualizado |
+
+Las operaciones de Countries y Customers usan procedimientos almacenados de MySQL por medio de `IMySqlDataService`. Las pruebas unitarias de los controladores están en `CarRentalTests/Countries` y `CarRentalTests/Customers`.
+
+Ejecuta las pruebas con `dotnet test CarRental.sln`.
