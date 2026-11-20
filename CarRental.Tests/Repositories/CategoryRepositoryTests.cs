@@ -4,7 +4,7 @@ using CarRentalServices.Repositories;
 using Moq;
 using System.Data;
 
-namespace CarRentalTests.Repositories
+namespace CarRental.Tests.Repositories
 {
     public class CategoryRepositoryTests
     {
@@ -293,3 +293,4 @@ namespace CarRentalTests.Repositories
         
     }
 }
+
