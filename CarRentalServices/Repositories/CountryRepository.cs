@@ -4,60 +4,70 @@ using CarRentalServices.Utilities;
 using MySqlConnector;
 using System.Data;
 
-namespace CarRentalServices.Repositories;
-
-public class CountryRepository(IMySqlDataService dataService) : ICountryRepository
+namespace CarRentalServices.Repositories
 {
-    public IEnumerable<Country> GetCountries()
+    public class CountryRepository : ICountryRepository
     {
-        var data = dataService.ExecSP("GetCountries");
-        return data.Tables.Count > 0 ? MapCountries(data.Tables[0]) : [];
-    }
+        private readonly IMySqlDataService _dataService;
 
-    public Country? GetCountryById(int id)
-    {
-        var parameters = new[]
+        public CountryRepository(IMySqlDataService dataService)
         {
-            MySqlParameterBuilder.CreateParameter("@p_CountryId", MySqlDbType.Int32, id)
-        };
-        var data = dataService.ExecSP("GetCountryById", parameters);
-        return data.Tables.Count > 0 ? MapCountries(data.Tables[0]).FirstOrDefault() : null;
-    }
+            _dataService = dataService;
+        }
 
-    public bool InsertCountry(Country country)
-    {
-        var parameters = new[]
+        public IEnumerable<Country> GetCountries()
         {
-            MySqlParameterBuilder.CreateParameter("@p_CountryName", MySqlDbType.VarChar, 100, country.CountryName)
-        };
-        var result = dataService.ExecSP("InsertCountry", parameters);
-        if (result.Tables.Count > 0 && result.Tables[0].Rows.Count > 0)
-            country.IdCountry = Convert.ToInt32(result.Tables[0].Rows[0]["newCountryId"]);
+            var data = _dataService.ExecSP("GetCountries");
+            return data.Tables.Count > 0 ? MapCountries(data.Tables[0]) : [];
+        }
 
-        return country.IdCountry > 0;
-    }
-
-    public bool UpdateCountry(Country country)
-    {
-        var parameters = new[]
+        public Country? GetCountryById(int id)
         {
-            MySqlParameterBuilder.CreateParameter("@p_CountryName", MySqlDbType.VarChar, 100, country.CountryName),
-            MySqlParameterBuilder.CreateParameter("@p_CountryId", MySqlDbType.Int32, country.IdCountry)
-        };
-        var result = dataService.ExecSP("UpdateCountry", parameters);
-        return result.Tables.Count > 0
-            && result.Tables[0].Rows.Count > 0
-            && Convert.ToInt32(result.Tables[0].Rows[0]["RowsAffected"]) > 0;
-    }
-
-    private static List<Country> MapCountries(DataTable table)
-    {
-        return table.Rows.Cast<DataRow>()
-            .Select(row => new Country
+            var parameters = new[]
             {
-                IdCountry = Convert.ToInt32(row["IdCountry"]),
-                CountryName = Convert.ToString(row["CountryName"]) ?? string.Empty
-            })
-            .ToList();
+                MySqlParameterBuilder.CreateParameter("@p_CountryId", MySqlDbType.Int32, id)
+            };
+            var data = _dataService.ExecSP("GetCountryById", parameters);
+            return data.Tables.Count > 0 ? MapCountries(data.Tables[0]).FirstOrDefault() : null;
+        }
+
+        public bool InsertCountry(Country country)
+        {
+            var parameters = new[]
+            {
+                MySqlParameterBuilder.CreateParameter("@p_CountryName", MySqlDbType.VarChar, 100, country.CountryName)
+            };
+            var result = _dataService.ExecSP("InsertCountry", parameters);
+            if (result.Tables.Count > 0 && result.Tables[0].Rows.Count > 0)
+            {
+                country.IdCountry = Convert.ToInt32(result.Tables[0].Rows[0]["newCountryId"]);
+            }
+
+            return country.IdCountry > 0;
+        }
+
+        public bool UpdateCountry(Country country)
+        {
+            var parameters = new[]
+            {
+                MySqlParameterBuilder.CreateParameter("@p_CountryName", MySqlDbType.VarChar, 100, country.CountryName),
+                MySqlParameterBuilder.CreateParameter("@p_CountryId", MySqlDbType.Int32, country.IdCountry)
+            };
+            var result = _dataService.ExecSP("UpdateCountry", parameters);
+            return result.Tables.Count > 0
+                && result.Tables[0].Rows.Count > 0
+                && Convert.ToInt32(result.Tables[0].Rows[0]["RowsAffected"]) > 0;
+        }
+
+        private static List<Country> MapCountries(DataTable table)
+        {
+            return table.Rows.Cast<DataRow>()
+                .Select(row => new Country
+                {
+                    IdCountry = Convert.ToInt32(row["IdCountry"]),
+                    CountryName = Convert.ToString(row["CountryName"]) ?? string.Empty
+                })
+                .ToList();
+        }
     }
 }

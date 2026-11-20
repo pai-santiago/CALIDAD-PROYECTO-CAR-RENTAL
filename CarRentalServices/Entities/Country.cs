@@ -1,7 +1,8 @@
-namespace CarRentalServices.Entities;
-
-public class Country
+namespace CarRentalServices.Entities
 {
-    public int IdCountry { get; set; }
-    public required string CountryName { get; set; }
+    public class Country
+    {
+        public int IdCountry { get; set; }
+        public string CountryName { get; set; } = string.Empty;
+    }
 }

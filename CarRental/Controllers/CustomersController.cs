@@ -1,44 +1,52 @@
-using CarRentalServices.Contracts;
+﻿using CarRentalServices.Contracts;
 using CarRentalServices.Entities;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CarRental.Controllers;
-
-[ApiController]
-[Route("[controller]")]
-public class CustomersController([FromKeyedServices("MySql")] ICustomerRepository customerRepository) : ControllerBase
+namespace CarRental.Controllers
 {
-    [HttpGet]
-    public IActionResult Index() => Ok(customerRepository.GetCustomers());
-
-    [HttpGet("{id:int}")]
-    public IActionResult GetCustomerById(int id)
+    [ApiController]
+    [Route("[controller]")]
+    public class CustomersController : ControllerBase
     {
-        if (id <= 0)
-            return BadRequest("Invalid Customer Id.");
+        private readonly ICustomerRepository _customerRepository;
 
-        var customer = customerRepository.GetCustomerById(id);
-        return customer is null ? NotFound() : Ok(customer);
-    }
+        public CustomersController([FromKeyedServices("MySql")] ICustomerRepository customerRepository)
+        {
+            _customerRepository = customerRepository;
+        }
 
-    [HttpPost]
-    public IActionResult Create([FromBody] Customer customer)
-    {
-        if (customer is null)
-            return BadRequest("Invalid Customer.");
+        [HttpGet]
+        public IActionResult Index()
+        {
+            return Ok(_customerRepository.GetCustomers());
+        }
 
-        if (!customerRepository.InsertCustomer(customer))
-            return Problem("The customer could not be created.");
+        [HttpGet("{id:int}")]
+        public IActionResult GetCustomerById(int id)
+        {
+            var customer = _customerRepository.GetCustomerById(id);
+            return customer is null ? NotFound() : Ok(customer);
+        }
 
-        return CreatedAtAction(nameof(GetCustomerById), new { id = customer.IdCustomer }, customer);
-    }
+        [HttpPost]
+        public IActionResult Create([FromBody] Customer customer)
+        {
+            if (!_customerRepository.InsertCustomer(customer))
+            {
+                return Problem("The customer could not be created.");
+            }
 
-    [HttpPut]
-    public IActionResult Update([FromBody] Customer customer)
-    {
-        if (customer is null || customer.IdCustomer <= 0)
-            return BadRequest("Invalid Customer.");
+            return CreatedAtAction(
+                nameof(GetCustomerById),
+                new { id = customer.IdCustomer },
+                customer
+            );
+        }
 
-        return customerRepository.UpdateCustomer(customer) ? NoContent() : NotFound();
+        [HttpPut]
+        public IActionResult Update([FromBody] Customer customer)
+        {
+            return _customerRepository.UpdateCustomer(customer) ? NoContent() : NotFound();
+        }
     }
 }

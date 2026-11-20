@@ -1,11 +1,12 @@
 using CarRentalServices.Entities;
 
-namespace CarRentalServices.Contracts;
-
-public interface ICountryRepository
+namespace CarRentalServices.Contracts
 {
-    IEnumerable<Country> GetCountries();
-    Country? GetCountryById(int id);
-    bool InsertCountry(Country country);
-    bool UpdateCountry(Country country);
+    public interface ICountryRepository
+    {
+        IEnumerable<Country> GetCountries();
+        Country? GetCountryById(int id);
+        bool InsertCountry(Country country);
+        bool UpdateCountry(Country country);
+    }
 }

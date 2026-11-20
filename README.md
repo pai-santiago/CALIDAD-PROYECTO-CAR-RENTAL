@@ -10,11 +10,11 @@ Proyecto ASP.NET Core 8 de renta de autos con autenticación JWT conectada a la 
 | `POST` | `/api/auth/login` | `200 OK`, token JWT Bearer |
 | `GET` | `/api/auth/me` | `200 OK` con token; `401` sin token |
 
-Las contraseñas se guardan como hash PBKDF2. El registro no acepta roles del cliente. La API reutiliza la conexión y `IMySqlDataService` del proyecto actual; al iniciar crea `auth_roles` y `auth_users` si aún no existen.
+Las contraseñas se guardan con PBKDF2. El registro siempre asigna el rol `User`. La API reutiliza `IMySqlDataService` y los procedimientos almacenados del proyecto.
 
 ## Ejecutar
 
-Abre `CarRental.sln` en Visual Studio y ejecuta el perfil **CarRental Local**. La cadena local se lee de `ConnectionStrings:MysqlConnection`; no agregues contraseñas a `appsettings.json` ni al repositorio. Si necesitas configurarla, usa User Secrets de Visual Studio. En desarrollo, la clave JWT se genera en memoria si no defines `Jwt:Key`.
+Ejecuta `database/CarRental.sql` en MySQL Workbench una vez. Luego abre `CarRental.sln` en Visual Studio y ejecuta el perfil **CarRental Local**. La cadena local se lee de `ConnectionStrings:MysqlConnection`; no agregues contraseñas a `appsettings.json` ni al repositorio. Si necesitas configurarla, usa User Secrets de Visual Studio. En desarrollo, la clave JWT se genera en memoria si no defines `Jwt:Key`.
 
 Swagger: `http://localhost:5231/swagger`.
 
@@ -26,7 +26,7 @@ La colección usa cuentas de demostración. No reutilices su contraseña fuera d
 
 ## Countries y Customers
 
-Ejecuta `database/02_countries_customers.sql` en MySQL Workbench para crear `isoCountries` y `Customers`, agregar tres registros de ejemplo por tabla y crear los procedimientos almacenados usados por la API.
+El script `database/CarRental.sql` crea `isoCountries`, `Customers`, `auth_roles` y `auth_users`; agrega los tres registros de ejemplo por tabla de Countries y Customers, y define los procedimientos almacenados usados por la API.
 
 | Método | Ruta | Resultado correcto |
 | --- | --- | --- |
@@ -39,6 +39,6 @@ Ejecuta `database/02_countries_customers.sql` en MySQL Workbench para crear `iso
 | `POST` | `/Customers` | `201 Created`, cliente creado |
 | `PUT` | `/Customers` | `204 No Content`, cliente actualizado |
 
-Las operaciones de Countries y Customers usan procedimientos almacenados de MySQL por medio de `IMySqlDataService`. Las pruebas unitarias de los controladores están en `CarRentalTests/Countries` y `CarRentalTests/Customers`.
+Las operaciones de autenticación, Countries y Customers usan procedimientos almacenados por medio de `IMySqlDataService`. Las pruebas unitarias de los controladores están en `CarRental.Tests/Countries` y `CarRental.Tests/Customers`.
 
 Ejecuta las pruebas con `dotnet test CarRental.sln`.

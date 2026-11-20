@@ -1,10 +1,12 @@
-﻿using CarRentalServices.Entities;
-namespace CarRentalServices.Contracts;
+using CarRentalServices.Entities;
 
-public interface ICustomerRepository
+namespace CarRentalServices.Contracts
 {
-    IEnumerable<Customer> GetCustomers();
-    Customer? GetCustomerById(int id);
-    bool InsertCustomer(Customer customer);
-    bool UpdateCustomer(Customer customer);
+    public interface ICustomerRepository
+    {
+        IEnumerable<Customer> GetCustomers();
+        Customer? GetCustomerById(int id);
+        bool InsertCustomer(Customer customer);
+        bool UpdateCustomer(Customer customer);
+    }
 }

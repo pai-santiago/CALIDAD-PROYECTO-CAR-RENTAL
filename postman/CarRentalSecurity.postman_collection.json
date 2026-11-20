@@ -38,6 +38,7 @@
     },
     {
       "name": "Perfil protegido - validar JWT",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('HTTP 200', function () { pm.response.to.have.status(200); });"] } }],
       "request": {
         "method": "GET",
         "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],

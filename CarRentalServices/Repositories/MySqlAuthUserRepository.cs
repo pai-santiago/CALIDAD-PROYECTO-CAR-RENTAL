@@ -1,65 +1,60 @@
 using System.Data;
 using CarRentalServices.Contracts;
 using CarRentalServices.Entities;
-using CarRentalServices.Services;
+using CarRentalServices.Utilities;
 using MySqlConnector;
 
-namespace CarRentalServices.Repositories;
-
-public sealed class MySqlAuthUserRepository(IMySqlDataService mysql) : IAuthUserRepository
+namespace CarRentalServices.Repositories
 {
-    private const string SelectUser = """
-        SELECT u.Id, u.Username, u.NormalizedUsername, u.Email, u.NormalizedEmail,
-               u.PasswordHash, r.Name AS Role, u.CreatedAtUtc
-        FROM auth_users u
-        INNER JOIN auth_roles r ON r.Id = u.RoleId
-        """;
-
-    public bool Exists(string normalizedUsername, string normalizedEmail)
+    public class MySqlAuthUserRepository : IAuthUserRepository
     {
-        var result = mysql.ExecuteSql(
-            "SELECT 1 FROM auth_users WHERE NormalizedUsername = @username OR NormalizedEmail = @email LIMIT 1;",
-            [new MySqlParameter("@username", normalizedUsername), new MySqlParameter("@email", normalizedEmail)]);
-        return result.Tables.Count > 0 && result.Tables[0].Rows.Count > 0;
-    }
+        private readonly IMySqlDataService _dataService;
 
-    public AuthUser? GetByUsername(string normalizedUsername)
-    {
-        var result = mysql.ExecuteSql(
-            $"{SelectUser} WHERE u.NormalizedUsername = @username LIMIT 1;",
-            [new MySqlParameter("@username", normalizedUsername)]);
-        if (result.Tables.Count == 0 || result.Tables[0].Rows.Count == 0)
-            return null;
-
-        var row = result.Tables[0].Rows[0];
-        return new AuthUser
+        public MySqlAuthUserRepository(IMySqlDataService dataService)
         {
-            Id = Convert.ToInt64(row["Id"]),
-            Username = Convert.ToString(row["Username"])!,
-            NormalizedUsername = Convert.ToString(row["NormalizedUsername"])!,
-            Email = Convert.ToString(row["Email"])!,
-            NormalizedEmail = Convert.ToString(row["NormalizedEmail"])!,
-            PasswordHash = Convert.ToString(row["PasswordHash"])!,
-            Role = Convert.ToString(row["Role"])!,
-            CreatedAtUtc = DateTime.SpecifyKind(Convert.ToDateTime(row["CreatedAtUtc"]), DateTimeKind.Utc)
-        };
-    }
+            _dataService = dataService;
+        }
 
-    public long Create(AuthUser user)
-    {
-        return mysql.ExecuteInsert("""
-            INSERT INTO auth_users
-                (Username, NormalizedUsername, Email, NormalizedEmail, PasswordHash, RoleId, CreatedAtUtc)
-            VALUES
-                (@username, @normalizedUsername, @email, @normalizedEmail, @passwordHash,
-                 (SELECT Id FROM auth_roles WHERE Name = 'User'), @createdAtUtc);
-            """, [
-                new MySqlParameter("@username", user.Username),
-                new MySqlParameter("@normalizedUsername", user.NormalizedUsername),
-                new MySqlParameter("@email", user.Email),
-                new MySqlParameter("@normalizedEmail", user.NormalizedEmail),
-                new MySqlParameter("@passwordHash", user.PasswordHash),
-                new MySqlParameter("@createdAtUtc", user.CreatedAtUtc)
-            ]);
+        public AuthUser? GetByUsername(string normalizedUsername)
+        {
+            var parameters = new[]
+            {
+                MySqlParameterBuilder.CreateParameter("@p_NormalizedUsername", MySqlDbType.VarChar, 60, normalizedUsername)
+            };
+            var data = _dataService.ExecSP("GetAuthUserByUsername", parameters);
+            if (data.Tables.Count == 0 || data.Tables[0].Rows.Count == 0)
+                return null;
+
+            var row = data.Tables[0].Rows[0];
+            return new AuthUser
+            {
+                Id = Convert.ToInt64(row["Id"]),
+                Username = Convert.ToString(row["Username"]) ?? string.Empty,
+                NormalizedUsername = Convert.ToString(row["NormalizedUsername"]) ?? string.Empty,
+                Email = Convert.ToString(row["Email"]) ?? string.Empty,
+                NormalizedEmail = Convert.ToString(row["NormalizedEmail"]) ?? string.Empty,
+                PasswordHash = Convert.ToString(row["PasswordHash"]) ?? string.Empty,
+                Role = Convert.ToString(row["Role"]) ?? "User",
+                CreatedAtUtc = DateTime.SpecifyKind(Convert.ToDateTime(row["CreatedAtUtc"]), DateTimeKind.Utc)
+            };
+        }
+
+        public long Create(AuthUser user)
+        {
+            var parameters = new[]
+            {
+                MySqlParameterBuilder.CreateParameter("@p_Username", MySqlDbType.VarChar, 60, user.Username),
+                MySqlParameterBuilder.CreateParameter("@p_NormalizedUsername", MySqlDbType.VarChar, 60, user.NormalizedUsername),
+                MySqlParameterBuilder.CreateParameter("@p_Email", MySqlDbType.VarChar, 254, user.Email),
+                MySqlParameterBuilder.CreateParameter("@p_NormalizedEmail", MySqlDbType.VarChar, 254, user.NormalizedEmail),
+                MySqlParameterBuilder.CreateParameter("@p_PasswordHash", MySqlDbType.VarChar, 512, user.PasswordHash),
+                MySqlParameterBuilder.CreateParameter("@p_CreatedAtUtc", MySqlDbType.DateTime, user.CreatedAtUtc)
+            };
+            var data = _dataService.ExecSP("CreateAuthUser", parameters);
+            if (data.Tables.Count > 0 && data.Tables[0].Rows.Count > 0)
+                return Convert.ToInt64(data.Tables[0].Rows[0]["newUserId"]);
+
+            throw new InvalidOperationException("The user was not created.");
+        }
     }
 }
