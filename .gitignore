@@ -9,4 +9,10 @@
 !.env.example
 artifacts/
 evidencias/
+!evidencias/
+evidencias/*
+!evidencias/04-api-isocountries.png
+!evidencias/05-api-customers.png
+!evidencias/06-api-swagger-equipo.png
 *.log
+
