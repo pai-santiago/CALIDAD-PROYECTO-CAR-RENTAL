@@ -21,6 +21,7 @@ builder.Services.AddKeyedScoped<IBrandRepository, BrandRepository>("MySql");
 builder.Services.AddKeyedScoped<ICategoryRepository, MySqlCategoryRepository>("MySql");
 builder.Services.AddKeyedScoped<ICarRepository, CarRepository>("MySql");
 builder.Services.AddKeyedScoped<ICustomerRepository, CustomerRepository>("MySql");
+builder.Services.AddKeyedScoped<ICountryRepository, CountryRepository>("MySql");
 builder.Services.AddKeyedScoped<ILocationRepository, LocationRepository>("MySql");
 builder.Services.AddKeyedScoped<IColorRepository, ColorRepository>("MySql");
 
